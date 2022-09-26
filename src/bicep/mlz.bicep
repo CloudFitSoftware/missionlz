@@ -521,6 +521,14 @@ param deployDefender bool = false
 @description('Email address of the contact, in the form of john@doe.com')
 param emailSecurityContact string = ''
 
+// CUSTOMER MANAGED KEY PARAMETERS
+
+@description('When set to "true", deploys a KeyVault, Key, User Assigned Identity, and configures services to use this where possible.')
+param deployCustomerManagedKeys bool = true
+
+@description('Key name for the customer managed key within the KeyVault')
+param customerManagedKeyName string = 'cmkey'
+
 /*
 
   NAMING CONVENTION
@@ -556,6 +564,7 @@ var bastionHostNamingConvention = replace(namingConvention, resourceToken, 'bas'
 var firewallNamingConvention = replace(namingConvention, resourceToken, 'afw')
 var firewallPolicyNamingConvention = replace(namingConvention, resourceToken, 'afwp')
 var ipConfigurationNamingConvention = replace(namingConvention, resourceToken, 'ipconf')
+var keyVaultNamingConvention = toLower('${resourcePrefix}kv${nameToken}unique_kv_token')
 var logAnalyticsWorkspaceNamingConvention = replace(namingConvention, resourceToken, 'log')
 var networkInterfaceNamingConvention = replace(namingConvention, resourceToken, 'nic')
 var networkSecurityGroupNamingConvention = replace(namingConvention, resourceToken, 'nsg')
@@ -563,6 +572,7 @@ var publicIpAddressNamingConvention = replace(namingConvention, resourceToken, '
 var resourceGroupNamingConvention = replace(namingConvention, resourceToken, 'rg')
 var storageAccountNamingConvention = toLower('${resourcePrefix}st${nameToken}unique_storage_token')
 var subnetNamingConvention = replace(namingConvention, resourceToken, 'snet')
+var userAssignedIdentityNamingConvention = replace(namingConvention, resourceToken, 'mi')
 var virtualMachineNamingConvention = replace(namingConvention, resourceToken, 'vm')
 var virtualNetworkNamingConvention = replace(namingConvention, resourceToken, 'vnet')
 
@@ -577,6 +587,10 @@ var hubLogStorageAccountName = take(hubLogStorageAccountUniqueName, 23)
 var hubVirtualNetworkName = replace(virtualNetworkNamingConvention, nameToken, hubName)
 var hubNetworkSecurityGroupName = replace(networkSecurityGroupNamingConvention, nameToken, hubName)
 var hubSubnetName = replace(subnetNamingConvention, nameToken, hubName)
+var hubKeyVaultShortName = replace(keyVaultNamingConvention, nameToken, hubShortName)
+var hubKeyVaultUniqueName = replace(hubKeyVaultShortName, 'unique_kv_token', uniqueString(resourcePrefix, resourceSuffix, hubSubscriptionId))
+var hubKeyVaultName = take(hubKeyVaultUniqueName, 23)
+var hubUserAssignedIdentityName = replace(userAssignedIdentityNamingConvention, nameToken, hubName)
 
 // IDENTITY NAMES
 
@@ -589,6 +603,10 @@ var identityLogStorageAccountName = take(identityLogStorageAccountUniqueName, 23
 var identityVirtualNetworkName = replace(virtualNetworkNamingConvention, nameToken, identityName)
 var identityNetworkSecurityGroupName = replace(networkSecurityGroupNamingConvention, nameToken, identityName)
 var identitySubnetName = replace(subnetNamingConvention, nameToken, identityName)
+var identityKeyVaultShortName = replace(keyVaultNamingConvention, nameToken, identityShortName)
+var identityKeyVaultUniqueName = replace(identityKeyVaultShortName, 'unique_kv_token', uniqueString(resourcePrefix, resourceSuffix, identitySubscriptionId))
+var identityKeyVaultName = take(identityKeyVaultUniqueName, 23)
+var identityUserAssignedIdentityName = replace(userAssignedIdentityNamingConvention, nameToken, identityName)
 
 // OPERATIONS NAMES
 
@@ -601,6 +619,10 @@ var operationsLogStorageAccountName = take(operationsLogStorageAccountUniqueName
 var operationsVirtualNetworkName = replace(virtualNetworkNamingConvention, nameToken, operationsName)
 var operationsNetworkSecurityGroupName = replace(networkSecurityGroupNamingConvention, nameToken, operationsName)
 var operationsSubnetName = replace(subnetNamingConvention, nameToken, operationsName)
+var operationsKeyVaultShortName = replace(keyVaultNamingConvention, nameToken, operationsShortName)
+var operationsKeyVaultUniqueName = replace(operationsKeyVaultShortName, 'unique_kv_token', uniqueString(resourcePrefix, resourceSuffix, operationsSubscriptionId))
+var operationsKeyVaultName = take(operationsKeyVaultUniqueName, 23)
+var operationsUserAssignedIdentityName = replace(userAssignedIdentityNamingConvention, nameToken, operationsName)
 
 // SHARED SERVICES NAMES
 
@@ -613,6 +635,10 @@ var sharedServicesLogStorageAccountName = take(sharedServicesLogStorageAccountUn
 var sharedServicesVirtualNetworkName = replace(virtualNetworkNamingConvention, nameToken, sharedServicesName)
 var sharedServicesNetworkSecurityGroupName = replace(networkSecurityGroupNamingConvention, nameToken, sharedServicesName)
 var sharedServicesSubnetName = replace(subnetNamingConvention, nameToken, sharedServicesName)
+var sharedServicesKeyVaultShortName = replace(keyVaultNamingConvention, nameToken, sharedServicesShortName)
+var sharedServicesKeyVaultUniqueName = replace(sharedServicesKeyVaultShortName, 'unique_kv_token', uniqueString(resourcePrefix, resourceSuffix, sharedServicesSubscriptionId))
+var sharedServicesKeyVaultName = take(sharedServicesKeyVaultUniqueName, 23)
+var sharedServicesUserAssignedIdentityName = replace(userAssignedIdentityNamingConvention, nameToken, sharedServicesName)
 
 // LOG ANALYTICS NAMES
 
@@ -669,6 +695,8 @@ var spokes = [
     subnetAddressPrefix: identitySubnetAddressPrefix
     subnetServiceEndpoints: identitySubnetServiceEndpoints
     subnetPrivateEndpointNetworkPolicies: 'Enabled'
+    userAssignedIdentityName: identityUserAssignedIdentityName
+    keyVaultName: identityKeyVaultName
   }
   {
     name: operationsName
@@ -687,6 +715,8 @@ var spokes = [
     subnetAddressPrefix: operationsSubnetAddressPrefix
     subnetServiceEndpoints: operationsSubnetServiceEndpoints
     subnetPrivateEndpointNetworkPolicies: 'Disabled'
+    userAssignedIdentityName: operationsUserAssignedIdentityName
+    keyVaultName: operationsKeyVaultName
   }
   {
     name: sharedServicesName
@@ -705,6 +735,8 @@ var spokes = [
     subnetAddressPrefix: sharedServicesSubnetAddressPrefix
     subnetServiceEndpoints: sharedServicesSubnetServiceEndpoints
     subnetPrivateEndpointNetworkPolicies: 'Enabled'
+    userAssignedIdentityName: sharedServicesUserAssignedIdentityName
+    keyVaultName: sharedServicesKeyVaultName
   }
 ]
 
@@ -767,6 +799,38 @@ module logAnalyticsWorkspace './modules/log-analytics-workspace.bicep' = {
   ]
 }
 
+// CUSTOMER MANAGED KEYS
+
+module hubUserAssignedIdentity './modules/customer-managed-keys.bicep' = if (deployCustomerManagedKeys) {
+  name: 'deploy-uai-hub-${deploymentNameSuffix}'
+  scope: resourceGroup(hubSubscriptionId, hubResourceGroupName)
+  params: {
+    location: location
+    tags: calculatedTags
+    userAssignedIdentityName: hubUserAssignedIdentityName
+    keyVaultName: hubKeyVaultName
+    keyVaultKeyName: customerManagedKeyName
+  }
+  dependsOn: [
+    hubResourceGroup
+  ]
+}
+
+module spokeUserAssignedIdentities './modules/customer-managed-keys.bicep' = [for spoke in spokes: if (deployCustomerManagedKeys) {
+  name: 'deploy-uai-${spoke.name}-${deploymentNameSuffix}'
+  scope: resourceGroup(spoke.subscriptionId, spoke.resourceGroupName)
+  params: {
+    location: location
+    tags: calculatedTags
+    userAssignedIdentityName: spoke.userAssignedIdentityName
+    keyVaultName: spoke.keyVaultName
+    keyVaultKeyName: customerManagedKeyName
+  }
+  dependsOn: [
+    spokeResourceGroups
+  ]
+}]
+
 // HUB AND SPOKE NETWORKS
 
 module hubNetwork './core/hub-network.bicep' = {
@@ -821,6 +885,11 @@ module hubNetwork './core/hub-network.bicep' = {
 
     publicIPAddressDiagnosticsLogs: publicIPAddressDiagnosticsLogs
     publicIPAddressDiagnosticsMetrics: publicIPAddressDiagnosticsMetrics
+
+    useCustomerManagedKey: deployCustomerManagedKeys
+    userAssignedIdentityName: hubUserAssignedIdentityName
+    keyVaultName: hubKeyVaultName
+    customerManagedKeyName: customerManagedKeyName
   }
 }
 
@@ -853,6 +922,11 @@ module spokeNetworks './core/spoke-network.bicep' = [for spoke in spokes: {
     subnetServiceEndpoints: spoke.subnetServiceEndpoints
 
     subnetPrivateEndpointNetworkPolicies: spoke.subnetPrivateEndpointNetworkPolicies
+
+    useCustomerManagedKey: deployCustomerManagedKeys
+    userAssignedIdentityName: spoke.userAssignedIdentityName
+    keyVaultName: spoke.keyVaultName
+    customerManagedKeyName: customerManagedKeyName
   }
 }]
 

@@ -36,6 +36,11 @@ param routeTableRouteNextHopType string = 'VirtualAppliance'
 
 param subnetPrivateEndpointNetworkPolicies string
 
+param useCustomerManagedKey bool = false
+param userAssignedIdentityName string = ''
+param keyVaultName string = ''
+param customerManagedKeyName string = ''
+
 module logStorage '../modules/storage-account.bicep' = {
   name: 'logStorage'
   params: {
@@ -43,6 +48,11 @@ module logStorage '../modules/storage-account.bicep' = {
     location: location
     skuName: logStorageSkuName
     tags: tags
+
+    useCustomerManagedKey: useCustomerManagedKey
+    userAssignedIdentityName: userAssignedIdentityName
+    keyVaultName: keyVaultName
+    customerManagedKeyName: customerManagedKeyName
   }
 }
 
@@ -54,7 +64,7 @@ module networkSecurityGroup '../modules/network-security-group.bicep' = {
     tags: tags
 
     securityRules: networkSecurityGroupRules
-    
+
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     logStorageAccountResourceId: logStorage.outputs.id
 
@@ -97,7 +107,7 @@ module virtualNetwork '../modules/virtual-network.bicep' = {
           routeTable: {
             id: routeTable.outputs.id
           }
-          serviceEndpoints: subnetServiceEndpoints            
+          serviceEndpoints: subnetServiceEndpoints
           privateEndpointNetworkPolicies: subnetPrivateEndpointNetworkPolicies
         }
       }
@@ -118,4 +128,4 @@ output subnetName string = virtualNetwork.outputs.subnets[0].name
 output subnetAddressPrefix string = virtualNetwork.outputs.subnets[0].properties.addressPrefix
 output subnetResourceId string = virtualNetwork.outputs.subnets[0].id
 output networkSecurityGroupName string = networkSecurityGroup.outputs.name
-output networkSecurityGroupResourceId string =  networkSecurityGroup.outputs.id
+output networkSecurityGroupResourceId string = networkSecurityGroup.outputs.id
