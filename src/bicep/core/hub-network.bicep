@@ -70,6 +70,11 @@ param firewallManagementPublicIPAddressAvailabilityZones array
 param publicIPAddressDiagnosticsLogs array
 param publicIPAddressDiagnosticsMetrics array
 
+param useCustomerManagedKey bool = false
+param userAssignedIdentityName string = ''
+param keyVaultName string = ''
+param customerManagedKeyName string = ''
+
 module logStorage '../modules/storage-account.bicep' = {
   name: 'logStorage'
   params: {
@@ -77,6 +82,11 @@ module logStorage '../modules/storage-account.bicep' = {
     location: location
     skuName: logStorageSkuName
     tags: tags
+
+    useCustomerManagedKey: useCustomerManagedKey
+    userAssignedIdentityName: userAssignedIdentityName
+    keyVaultName: keyVaultName
+    customerManagedKeyName: customerManagedKeyName
   }
 }
 
@@ -155,7 +165,7 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2021-02-01' = {
     routeTable: {
       id: routeTable.outputs.id
     }
-    serviceEndpoints: subnetServiceEndpoints    
+    serviceEndpoints: subnetServiceEndpoints
     privateEndpointNetworkPolicies: 'Disabled'
     privateLinkServiceNetworkPolicies: 'Enabled'
   }
@@ -223,7 +233,7 @@ module firewall '../modules/firewall.bicep' = {
     managementIpConfigurationName: firewallManagementIpConfigurationName
     managementIpConfigurationSubnetResourceId: '${virtualNetwork.outputs.id}/subnets/${firewallManagementSubnetName}'
     managementIpConfigurationPublicIPAddressResourceId: firewallManagementPublicIPAddress.outputs.id
-    
+
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     logStorageAccountResourceId: logStorage.outputs.id
 
