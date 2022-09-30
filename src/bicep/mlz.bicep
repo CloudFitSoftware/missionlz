@@ -383,7 +383,7 @@ param sharedServicesSubnetServiceEndpoints array = [
 // LOGGING PARAMETERS
 
 @description('When set to "true", enables Microsoft Sentinel within the Log Analytics Workspace created in this deployment. It defaults to "false".')
-param deploySentinel bool = false
+param deploySentinel bool = true
 
 @description('The daily quota for Log Analytics Workspace logs in Gigabytes. It defaults to "-1" for no quota.')
 param logAnalyticsWorkspaceCappingDailyQuotaGb int = -1
@@ -516,7 +516,7 @@ param policy string = 'NISTRev4'
 // MICROSOFT DEFENDER PARAMETERS
 
 @description('When set to "true", enables Microsoft Defender for Cloud for the subscriptions used in the deployment. It defaults to "false".')
-param deployDefender bool = false
+param deployDefender bool = true
 
 @description('Email address of the contact, in the form of john@doe.com')
 param emailSecurityContact string = ''
