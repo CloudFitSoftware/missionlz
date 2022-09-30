@@ -47,12 +47,10 @@ param policy string = mlzDeploymentVariables.policyName.Value
 @description('When set to "true", deploys the Azure Policy set defined at by the parameter "policy" to the resource groups generated in the deployment. It defaults to "false".')
 param deployPolicy bool = mlzDeploymentVariables.deployPolicy.Value
 
-
 @description('When set to "true", enables Microsoft Defender for Cloud for the subscriptions used in the deployment. It defaults to "false".')
 param deployDefender bool = mlzDeploymentVariables.deployDefender.Value
 @description('Email address of the contact, in the form of john@doe.com')
 param emailSecurityContact string = mlzDeploymentVariables.emailSecurityContact.Value
-
 
 @description('The address prefix for the network spoke vnet.')
 param virtualNetworkAddressPrefix string = '10.0.125.0/26'
@@ -90,7 +88,7 @@ param subnetServiceEndpoints array = []
 param logStorageSkuName string = 'Standard_GRS'
 
 @description('A string dictionary of tags to add to deployed resources. See https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources?tabs=json#arm-templates for valid settings.')
-param tags object = {} 
+param tags object = {}
 
 @description('A suffix to use for naming deployments uniquely. It defaults to the Bicep resolution of the "utcNow()" function.')
 param deploymentNameSuffix string = utcNow()
@@ -101,6 +99,14 @@ param workloadName string = 'workload'
 @maxLength(24)
 @description('The name of the Storage Account if using this Parameter. Otherwise it will be a calculated value.')
 param workloadLogStorageAccountNameParameter string = 'null'
+
+// CUSTOMER MANAGED KEY PARAMETERS
+
+@description('When set to "true", deploys a KeyVault, Key, User Assigned Identity, and configures services to use this where possible.')
+param deployCustomerManagedKeys bool = true
+
+@description('Key name for the customer managed key within the KeyVault')
+param customerManagedKeyName string = 'cmkey'
 
 /*
 
@@ -117,11 +123,13 @@ var resourceToken = 'resource_token'
 var nameToken = 'name_token'
 var namingConvention = '${toLower(resourcePrefix)}-${resourceToken}-${nameToken}-${toLower(resourceSuffix)}'
 
+var keyVaultNamingConvention = toLower('${resourcePrefix}kv${nameToken}unique_kv_token')
 var resourceGroupNamingConvention = replace(namingConvention, resourceToken, 'rg')
 var virtualNetworkNamingConvention = replace(namingConvention, resourceToken, 'vnet')
 var networkSecurityGroupNamingConvention = replace(namingConvention, resourceToken, 'nsg')
 var storageAccountNamingConvention = toLower('${resourcePrefix}st${nameToken}unique_storage_token')
 var subnetNamingConvention = replace(namingConvention, resourceToken, 'snet')
+var userAssignedIdentityNamingConvention = replace(namingConvention, resourceToken, 'mi')
 
 var workloadResourceGroupName = replace(resourceGroupNamingConvention, nameToken, workloadName)
 var workloadLogStorageAccountNameTemplate = replace(storageAccountNamingConvention, nameToken, toLower(workloadName))
@@ -130,6 +138,11 @@ var workloadLogStorageAccountNameVariable = take(workloadLogStorageAccountUnique
 var workloadVirtualNetworkName = replace(virtualNetworkNamingConvention, nameToken, workloadName)
 var workloadNetworkSecurityGroupName = replace(networkSecurityGroupNamingConvention, nameToken, workloadName)
 var workloadSubnetName = replace(subnetNamingConvention, nameToken, workloadName)
+var workloadKeyVaultShortName = replace(keyVaultNamingConvention, nameToken, workloadName)
+var workloadKeyVaultUniqueName = replace(workloadKeyVaultShortName, 'unique_kv_token', uniqueString(resourcePrefix, resourceSuffix, workloadSubscriptionId))
+var workloadKeyVaultName = take(workloadKeyVaultUniqueName, 23)
+var workloadUserAssignedIdentityName = replace(userAssignedIdentityNamingConvention, nameToken, workloadName)
+
 var logAnalyticsWorkspaceResourceId_split = split(logAnalyticsWorkspaceResourceId, '/')
 
 var workloadLogStorageAccountName = 'null' != workloadLogStorageAccountNameParameter ? workloadLogStorageAccountNameParameter : workloadLogStorageAccountNameVariable
@@ -149,12 +162,26 @@ module resourceGroup '../../modules/resource-group.bicep' = {
   }
 }
 
+module spokeUserAssignedIdentity '../../modules/customer-managed-keys.bicep' = if (deployCustomerManagedKeys) {
+  name: 'deploy-uai-workload-${deploymentNameSuffix}'
+  scope: az.resourceGroup(workloadSubscriptionId, resourceGroup.name)
+  params: {
+    location: location
+    tags: calculatedTags
+    userAssignedIdentityName: workloadUserAssignedIdentityName
+    keyVaultName: workloadKeyVaultName
+    keyVaultKeyName: customerManagedKeyName
+  }
+  dependsOn: [
+    resourceGroup
+  ]
+}
 module spokeNetwork '../../core/spoke-network.bicep' = {
   name: 'spokeNetwork'
   scope: az.resourceGroup(workloadSubscriptionId, resourceGroup.name)
   params: {
     tags: calculatedTags
-    location:location    
+    location: location
     logStorageAccountName: workloadLogStorageAccountName
     logStorageSkuName: logStorageSkuName
 
@@ -176,6 +203,11 @@ module spokeNetwork '../../core/spoke-network.bicep' = {
     subnetAddressPrefix: subnetAddressPrefix
     subnetServiceEndpoints: subnetServiceEndpoints
     subnetPrivateEndpointNetworkPolicies: 'Enabled'
+
+    useCustomerManagedKey: deployCustomerManagedKeys
+    userAssignedIdentityName: workloadUserAssignedIdentityName
+    keyVaultName: workloadKeyVaultName
+    customerManagedKeyName: customerManagedKeyName
   }
 }
 
@@ -217,16 +249,16 @@ module workloadSubscriptionActivityLogging '../../modules/central-logging.bicep'
 
 module workloadPolicyAssignment '../../modules/policy-assignment.bicep' = if (deployPolicy) {
   name: 'assign-policy-${workloadName}-${deploymentNameSuffix}'
-  scope:  az.resourceGroup(workloadSubscriptionId, resourceGroup.name)
+  scope: az.resourceGroup(workloadSubscriptionId, resourceGroup.name)
   params: {
     builtInAssignment: policy
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceResourceId_split[8]
     logAnalyticsWorkspaceResourceGroupName: logAnalyticsWorkspaceResourceId_split[4]
     location: location
     operationsSubscriptionId: logAnalyticsWorkspaceResourceId_split[2]
-   }
   }
-  
+}
+
 module spokeDefender '../../modules/defender.bicep' = if (deployDefender) {
   name: 'set-${workloadName}-sub-defender'
   scope: subscription(workloadSubscriptionId)
