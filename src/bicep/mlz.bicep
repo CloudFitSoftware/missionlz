@@ -39,6 +39,9 @@ param operationsSubscriptionId string = subscription().subscriptionId
 @description('The subscription ID for the Shared Services Network and resources. It defaults to the deployment subscription.')
 param sharedServicesSubscriptionId string = subscription().subscriptionId
 
+@description('The subscription ID for the User Workload Network and resources. It defaults to the deployment subscription.')
+param userWorkloadSubscriptionId string = subscription().subscriptionId
+
 @description('The region to deploy resources into. It defaults to the deployment location.')
 param location string = deployment().location
 
@@ -59,34 +62,40 @@ param tags object = {}
 // NETWORK ADDRESS SPACE PARAMETERS
 
 @description('The CIDR Virtual Network Address Prefix for the Hub Virtual Network.')
-param hubVirtualNetworkAddressPrefix string = '10.0.100.0/24'
+param hubVirtualNetworkAddressPrefix string = '10.150.0.0/24'
 
 @description('The CIDR Subnet Address Prefix for the default Hub subnet. It must be in the Hub Virtual Network space.')
-param hubSubnetAddressPrefix string = '10.0.100.128/27'
+param hubSubnetAddressPrefix string = '10.150.0.128/27'
 
 @description('The CIDR Subnet Address Prefix for the Azure Firewall Subnet. It must be in the Hub Virtual Network space. It must be /26.')
-param firewallClientSubnetAddressPrefix string = '10.0.100.0/26'
+param firewallClientSubnetAddressPrefix string = '10.150.0.64/26'
 
 @description('The CIDR Subnet Address Prefix for the Azure Firewall Management Subnet. It must be in the Hub Virtual Network space. It must be /26.')
-param firewallManagementSubnetAddressPrefix string = '10.0.100.64/26'
+param firewallManagementSubnetAddressPrefix string = '10.150.0.0/26'
 
 @description('The CIDR Virtual Network Address Prefix for the Identity Virtual Network.')
-param identityVirtualNetworkAddressPrefix string = '10.0.110.0/26'
+param identityVirtualNetworkAddressPrefix string = '10.150.1.0/26'
 
 @description('The CIDR Subnet Address Prefix for the default Identity subnet. It must be in the Identity Virtual Network space.')
-param identitySubnetAddressPrefix string = '10.0.110.0/27'
+param identitySubnetAddressPrefix string = '10.150.1.0/27'
 
 @description('The CIDR Virtual Network Address Prefix for the Operations Virtual Network.')
-param operationsVirtualNetworkAddressPrefix string = '10.0.115.0/26'
+param operationsVirtualNetworkAddressPrefix string = '10.150.1.64/26'
 
 @description('The CIDR Subnet Address Prefix for the default Operations subnet. It must be in the Operations Virtual Network space.')
-param operationsSubnetAddressPrefix string = '10.0.115.0/27'
+param operationsSubnetAddressPrefix string = '10.150.1.64/27'
 
 @description('The CIDR Virtual Network Address Prefix for the Shared Services Virtual Network.')
-param sharedServicesVirtualNetworkAddressPrefix string = '10.0.120.0/26'
+param sharedServicesVirtualNetworkAddressPrefix string = '10.150.1.128/26'
 
 @description('The CIDR Subnet Address Prefix for the default Shared Services subnet. It must be in the Shared Services Virtual Network space.')
-param sharedServicesSubnetAddressPrefix string = '10.0.120.0/27'
+param sharedServicesSubnetAddressPrefix string = '10.150.1.128/27'
+
+@description('The CIDR Virtual Network Address Prefix for the UserWorkload Virtual Network.')
+param userWorkloadVirtualNetworkAddressPrefix string = '10.150.1.128/26'
+
+@description('The CIDR Subnet Address Prefix for the default Shared Services subnet. It must be in the UserWorkload Virtual Network space.')
+param userWorkloadSubnetAddressPrefix string = '10.150.1.128/27'
 
 // FIREWALL PARAMETERS
 
@@ -380,6 +389,65 @@ param sharedServicesSubnetServiceEndpoints array = [
   }
 ]
 
+
+//USER WORKLOADS
+
+
+@description('An array of Network Diagnostic Logs to enable for the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#logs for valid settings.')
+param userWorkloadVirtualNetworkDiagnosticsLogs array = []
+
+@description('An array of Network Diagnostic Metrics to enable for the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#metrics for valid settings.')
+param userWorkloadVirtualNetworkDiagnosticsMetrics array = []
+
+@description('An array of Network Security Group rules to apply to the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/templates/microsoft.network/networksecuritygroups/securityrules?tabs=bicep#securityrulepropertiesformat for valid settings.')
+param userWorkloadNetworkSecurityGroupRules array = [
+  {
+    name: 'Allow-Traffic-From-Spokes'
+    properties: {
+      access: 'Allow'
+      description: 'Allow traffic from spokes'
+      destinationAddressPrefix: userWorkloadVirtualNetworkAddressPrefix
+      destinationPortRanges: [
+        '22'
+        '80'
+        '443'
+        '3389'
+      ]
+      direction: 'Inbound'
+      priority: 200
+      protocol: '*'
+      sourceAddressPrefixes: [
+        operationsVirtualNetworkAddressPrefix
+        identityVirtualNetworkAddressPrefix
+      ]
+      sourcePortRange: '*'
+    }
+    type: 'string'
+  }
+]
+
+@description('An array of Network Security Group diagnostic logs to apply to the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-nsg-manage-log#log-categories for valid settings.')
+param userWorkloadNetworkSecurityGroupDiagnosticsLogs array = [
+  {
+    category: 'NetworkSecurityGroupEvent'
+    enabled: true
+  }
+  {
+    category: 'NetworkSecurityGroupRuleCounter'
+    enabled: true
+  }
+]
+
+@description('An array of Network Security Group Diagnostic Metrics to enable for the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#metrics for valid settings.')
+param userWorkloadNetworkSecurityGroupDiagnosticsMetrics array = []
+
+@description('An array of Service Endpoints to enable for the SharedServices subnet. See https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview for valid settings.')
+param userWorkloadSubnetServiceEndpoints array = [
+  {
+    service: 'Microsoft.Storage'
+  }
+]
+
 // LOGGING PARAMETERS
 
 @description('When set to "true", enables Microsoft Sentinel within the Log Analytics Workspace created in this deployment. It defaults to "false".')
@@ -411,7 +479,7 @@ param logStorageSkuName string = 'Standard_GRS'
 param deployRemoteAccess bool = true
 
 @description('The CIDR Subnet Address Prefix for the Azure Bastion Subnet. It must be in the Hub Virtual Network space "hubVirtualNetworkAddressPrefix" parameter value. It must be /27 or larger.')
-param bastionHostSubnetAddressPrefix string = '10.0.100.160/27'
+param bastionHostSubnetAddressPrefix string = '10.150.0.160/27'
 
 @description('The Azure Bastion Public IP Address Availability Zones. It defaults to "No-Zone" because Availability Zones are not available in every cloud. See https://docs.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses#sku for valid settings.')
 param bastionHostPublicIPAddressAvailabilityZones array = []
@@ -614,6 +682,19 @@ var sharedServicesVirtualNetworkName = replace(virtualNetworkNamingConvention, n
 var sharedServicesNetworkSecurityGroupName = replace(networkSecurityGroupNamingConvention, nameToken, sharedServicesName)
 var sharedServicesSubnetName = replace(subnetNamingConvention, nameToken, sharedServicesName)
 
+// USER WORKLOADS
+
+var userWorkloadName = 'sharedServices'
+var userWorkloadShortName = 'uswld'
+var userWorkloadResourceGroupName = replace(resourceGroupNamingConvention, nameToken, userWorkloadName)
+var userWorkloadLogStorageAccountShortName = replace(storageAccountNamingConvention, nameToken, userWorkloadShortName)
+var userWorkloadLogStorageAccountUniqueName = replace(userWorkloadLogStorageAccountShortName, 'unique_storage_token', uniqueString(resourcePrefix, resourceSuffix, sharedServicesSubscriptionId))
+var userWorkloadLogStorageAccountName = take(userWorkloadLogStorageAccountUniqueName, 23)
+var userWorkloadVirtualNetworkName = replace(virtualNetworkNamingConvention, nameToken, userWorkloadName)
+var userWorkloadNetworkSecurityGroupName = replace(networkSecurityGroupNamingConvention, nameToken, userWorkloadName)
+var userWorkloadSubnetName = replace(subnetNamingConvention, nameToken, userWorkloadName)
+
+
 // LOG ANALYTICS NAMES
 
 var logAnalyticsWorkspaceName = replace(logAnalyticsWorkspaceNamingConvention, nameToken, operationsName)
@@ -704,6 +785,24 @@ var spokes = [
     subnetName: sharedServicesSubnetName
     subnetAddressPrefix: sharedServicesSubnetAddressPrefix
     subnetServiceEndpoints: sharedServicesSubnetServiceEndpoints
+    subnetPrivateEndpointNetworkPolicies: 'Enabled'
+  }
+  {
+    name: userWorkloadName
+    subscriptionId: userWorkloadSubscriptionId
+    resourceGroupName: userWorkloadResourceGroupName
+    logStorageAccountName: userWorkloadLogStorageAccountName
+    virtualNetworkName: userWorkloadVirtualNetworkName
+    virtualNetworkAddressPrefix: userWorkloadVirtualNetworkAddressPrefix
+    virtualNetworkDiagnosticsLogs: userWorkloadVirtualNetworkDiagnosticsLogs
+    virtualNetworkDiagnosticsMetrics:userWorkloadVirtualNetworkDiagnosticsMetrics
+    networkSecurityGroupName: userWorkloadNetworkSecurityGroupName
+    networkSecurityGroupRules: userWorkloadNetworkSecurityGroupRules
+    networkSecurityGroupDiagnosticsLogs: userWorkloadNetworkSecurityGroupDiagnosticsLogs
+    networkSecurityGroupDiagnosticsMetrics: userWorkloadNetworkSecurityGroupDiagnosticsMetrics
+    subnetName: userWorkloadSubnetName
+    subnetAddressPrefix: userWorkloadSubnetAddressPrefix
+    subnetServiceEndpoints: userWorkloadSubnetServiceEndpoints
     subnetPrivateEndpointNetworkPolicies: 'Enabled'
   }
 ]
