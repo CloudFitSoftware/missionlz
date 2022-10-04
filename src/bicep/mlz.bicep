@@ -92,10 +92,10 @@ param sharedServicesVirtualNetworkAddressPrefix string = '10.150.1.128/26'
 param sharedServicesSubnetAddressPrefix string = '10.150.1.128/27'
 
 @description('The CIDR Virtual Network Address Prefix for the UserWorkload Virtual Network.')
-param userWorkloadVirtualNetworkAddressPrefix string = '10.150.1.128/26'
+param userWorkloadVirtualNetworkAddressPrefix string = '10.150.2.0/25'
 
 @description('The CIDR Subnet Address Prefix for the default Shared Services subnet. It must be in the UserWorkload Virtual Network space.')
-param userWorkloadSubnetAddressPrefix string = '10.150.1.128/27'
+param userWorkloadSubnetAddressPrefix string = '10.150.2.0/27'
 
 // FIREWALL PARAMETERS
 
