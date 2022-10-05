@@ -393,13 +393,13 @@ param sharedServicesSubnetServiceEndpoints array = [
 //USER WORKLOADS
 
 
-@description('An array of Network Diagnostic Logs to enable for the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#logs for valid settings.')
+@description('An array of Network Diagnostic Logs to enable for the userWorkloads Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#logs for valid settings.')
 param userWorkloadVirtualNetworkDiagnosticsLogs array = []
 
-@description('An array of Network Diagnostic Metrics to enable for the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#metrics for valid settings.')
+@description('An array of Network Diagnostic Metrics to enable for the userWorkloads Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#metrics for valid settings.')
 param userWorkloadVirtualNetworkDiagnosticsMetrics array = []
 
-@description('An array of Network Security Group rules to apply to the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/templates/microsoft.network/networksecuritygroups/securityrules?tabs=bicep#securityrulepropertiesformat for valid settings.')
+@description('An array of Network Security Group rules to apply to the UserWorkloads Virtual Network. See https://docs.microsoft.com/en-us/azure/templates/microsoft.network/networksecuritygroups/securityrules?tabs=bicep#securityrulepropertiesformat for valid settings.')
 param userWorkloadNetworkSecurityGroupRules array = [
   {
     name: 'Allow-Traffic-From-Spokes'
@@ -426,7 +426,7 @@ param userWorkloadNetworkSecurityGroupRules array = [
   }
 ]
 
-@description('An array of Network Security Group diagnostic logs to apply to the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-nsg-manage-log#log-categories for valid settings.')
+@description('An array of Network Security Group diagnostic logs to apply to the UserWorkload Virtual Network. See https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-nsg-manage-log#log-categories for valid settings.')
 param userWorkloadNetworkSecurityGroupDiagnosticsLogs array = [
   {
     category: 'NetworkSecurityGroupEvent'
@@ -438,10 +438,10 @@ param userWorkloadNetworkSecurityGroupDiagnosticsLogs array = [
   }
 ]
 
-@description('An array of Network Security Group Diagnostic Metrics to enable for the SharedServices Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#metrics for valid settings.')
+@description('An array of Network Security Group Diagnostic Metrics to enable for the UserWorkload Virtual Network. See https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings?tabs=CMD#metrics for valid settings.')
 param userWorkloadNetworkSecurityGroupDiagnosticsMetrics array = []
 
-@description('An array of Service Endpoints to enable for the SharedServices subnet. See https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview for valid settings.')
+@description('An array of Service Endpoints to enable for the UserWorkload subnet. See https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview for valid settings.')
 param userWorkloadSubnetServiceEndpoints array = [
   {
     service: 'Microsoft.Storage'
@@ -451,7 +451,7 @@ param userWorkloadSubnetServiceEndpoints array = [
 // LOGGING PARAMETERS
 
 @description('When set to "true", enables Microsoft Sentinel within the Log Analytics Workspace created in this deployment. It defaults to "false".')
-param deploySentinel bool = true
+param deploySentinel bool = false
 
 @description('The daily quota for Log Analytics Workspace logs in Gigabytes. It defaults to "-1" for no quota.')
 param logAnalyticsWorkspaceCappingDailyQuotaGb int = -1
@@ -476,7 +476,7 @@ param logStorageSkuName string = 'Standard_GRS'
 // REMOTE ACCESS PARAMETERS
 
 @description('When set to "true", provisions Azure Bastion Host and virtual machine jumpboxes. It defaults to "false".')
-param deployRemoteAccess bool = true
+param deployRemoteAccess bool = false
 
 @description('The CIDR Subnet Address Prefix for the Azure Bastion Subnet. It must be in the Hub Virtual Network space "hubVirtualNetworkAddressPrefix" parameter value. It must be /27 or larger.')
 param bastionHostSubnetAddressPrefix string = '10.150.0.160/27'
@@ -584,7 +584,7 @@ param policy string = 'CMMC'
 // MICROSOFT DEFENDER PARAMETERS
 
 @description('When set to "true", enables Microsoft Defender for Cloud for the subscriptions used in the deployment. It defaults to "false".')
-param deployDefender bool = true
+param deployDefender bool = false
 
 @description('Email address of the contact, in the form of john@doe.com')
 param emailSecurityContact string = ''
@@ -684,11 +684,11 @@ var sharedServicesSubnetName = replace(subnetNamingConvention, nameToken, shared
 
 // USER WORKLOADS
 
-var userWorkloadName = 'sharedServices'
+var userWorkloadName = 'userWorkload'
 var userWorkloadShortName = 'uswld'
 var userWorkloadResourceGroupName = replace(resourceGroupNamingConvention, nameToken, userWorkloadName)
 var userWorkloadLogStorageAccountShortName = replace(storageAccountNamingConvention, nameToken, userWorkloadShortName)
-var userWorkloadLogStorageAccountUniqueName = replace(userWorkloadLogStorageAccountShortName, 'unique_storage_token', uniqueString(resourcePrefix, resourceSuffix, sharedServicesSubscriptionId))
+var userWorkloadLogStorageAccountUniqueName = replace(userWorkloadLogStorageAccountShortName, 'unique_storage_token', uniqueString(resourcePrefix, resourceSuffix, userWorkloadSubscriptionId))
 var userWorkloadLogStorageAccountName = take(userWorkloadLogStorageAccountUniqueName, 23)
 var userWorkloadVirtualNetworkName = replace(virtualNetworkNamingConvention, nameToken, userWorkloadName)
 var userWorkloadNetworkSecurityGroupName = replace(networkSecurityGroupNamingConvention, nameToken, userWorkloadName)
