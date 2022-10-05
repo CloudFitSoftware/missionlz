@@ -451,7 +451,7 @@ param userWorkloadSubnetServiceEndpoints array = [
 // LOGGING PARAMETERS
 
 @description('When set to "true", enables Microsoft Sentinel within the Log Analytics Workspace created in this deployment. It defaults to "false".')
-param deploySentinel bool = false
+param deploySentinel bool = true
 
 @description('The daily quota for Log Analytics Workspace logs in Gigabytes. It defaults to "-1" for no quota.')
 param logAnalyticsWorkspaceCappingDailyQuotaGb int = -1
@@ -476,7 +476,7 @@ param logStorageSkuName string = 'Standard_GRS'
 // REMOTE ACCESS PARAMETERS
 
 @description('When set to "true", provisions Azure Bastion Host and virtual machine jumpboxes. It defaults to "false".')
-param deployRemoteAccess bool = false
+param deployRemoteAccess bool = true
 
 @description('The CIDR Subnet Address Prefix for the Azure Bastion Subnet. It must be in the Hub Virtual Network space "hubVirtualNetworkAddressPrefix" parameter value. It must be /27 or larger.')
 param bastionHostSubnetAddressPrefix string = '10.150.0.160/27'
@@ -499,7 +499,7 @@ param linuxVmAuthenticationType string = 'password'
 @description('The administrator password or public SSH key for the Linux Virtual Machine to Azure Bastion remote into. See https://docs.microsoft.com/en-us/azure/virtual-machines/linux/faq#what-are-the-password-requirements-when-creating-a-vm- for password requirements.')
 @secure()
 @minLength(12)
-param linuxVmAdminPasswordOrKey string = deployRemoteAccess ? 'wigginposeidon2022!' : newGuid()
+param linuxVmAdminPasswordOrKey string = deployRemoteAccess ? '' : newGuid()
 
 @description('The size of the Linux Virtual Machine to Azure Bastion remote into. It defaults to "Standard_B2s".')
 param linuxVmSize string = 'Standard_B2s'
@@ -537,7 +537,7 @@ param windowsVmAdminUsername string = 'azureuser'
 @description('The administrator password the Windows Virtual Machine to Azure Bastion remote into. It must be > 12 characters in length. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/faq#what-are-the-password-requirements-when-creating-a-vm- for password requirements.')
 @secure()
 @minLength(12)
-param windowsVmAdminPassword string = deployRemoteAccess ? 'wigginposeidon2022!' : newGuid()
+param windowsVmAdminPassword string = deployRemoteAccess ? '' : newGuid()
 
 @description('The size of the Windows Virtual Machine to Azure Bastion remote into. It defaults to "Standard_DS1_v2".')
 param windowsVmSize string = 'Standard_DS1_v2'
@@ -584,7 +584,7 @@ param policy string = 'CMMC'
 // MICROSOFT DEFENDER PARAMETERS
 
 @description('When set to "true", enables Microsoft Defender for Cloud for the subscriptions used in the deployment. It defaults to "false".')
-param deployDefender bool = false
+param deployDefender bool = true
 
 @description('Email address of the contact, in the form of john@doe.com')
 param emailSecurityContact string = ''
